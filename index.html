@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lantern Loop — Playable Prototype</title>
+<style>
+:root{--night:#10182e;--panel:#192442;--ink:#f4f7ff;--muted:#b9c6e7;--gold:#ffd166;--mint:#75f0c2;--pink:#ff719a}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(ellipse at top,#26345c 0%,var(--night) 65%);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,sans-serif;min-height:100vh;display:grid;place-items:center;padding:18px}
+.wrap{width:min(900px,100%)} header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px} h1{font-size:clamp(25px,4vw,38px);margin:0;letter-spacing:-1px} .tag{color:var(--gold);font-weight:800;letter-spacing:.12em;font-size:12px} .hud{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#ffffff12;border:1px solid #ffffff20;padding:7px 12px;border-radius:999px;color:var(--muted);font-weight:700}.pill b{color:white}
+canvas{display:block;width:100%;height:auto;aspect-ratio:8/5;background:#0d1428;border:1px solid #6679ad70;border-radius:18px;box-shadow:0 18px 50px #0006;touch-action:none}
+.under{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:14px}.controls{display:flex;gap:8px}.controls button, .primary{background:var(--gold);color:#22243a;border:0;border-radius:12px;padding:10px 16px;font-weight:900;cursor:pointer}.controls button:active,.primary:active{transform:scale(.97)} .secondary{background:#ffffff14;color:white;border:1px solid #ffffff30}
+.mobile{display:none;grid-template-columns:repeat(3,56px);gap:7px;margin-top:14px;justify-content:center}.mobile button{height:48px;border:1px solid #ffffff35;border-radius:12px;background:#ffffff16;color:white;font-size:20px;font-weight:900;touch-action:manipulation}.mobile .blank{visibility:hidden}
+details{margin-top:16px;background:#ffffff0b;border:1px solid #ffffff18;border-radius:14px;padding:12px 15px;color:var(--muted)}summary{cursor:pointer;color:white;font-weight:800}
+@media(max-width:650px){.mobile{display:grid}.under{justify-content:center;text-align:center}}
+</style>
+</head>
+<body><main class="wrap">
+<header><div><div class="tag">A SMALL ORIGINAL ARCADE GAME</div><h1>🏮 Lantern Loop</h1></div><div class="hud"><div class="pill">FIREFLIES <b id="score">0 / 10</b></div><div class="pill">TIME <b id="time">60</b>s</div><div class="pill">LIVES <b id="lives">3</b></div></div></header>
+<canvas id="game" width="800" height="500" aria-label="Lantern Loop game area"></canvas>
+<div class="under"><span>Move with <b>WASD / arrow keys</b> or touch controls. Collect 10 fireflies; avoid shadow moths.</span><div class="controls"><button id="start" class="primary">Start / Restart</button><button id="pause" class="secondary">Pause</button></div></div>
+<div class="mobile" aria-label="Touch controls"><span class="blank"></span><button data-dir="up">▲</button><span class="blank"></span><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div>
+<details><summary>How to play</summary><p>You are the tiny lantern. Each firefly collected adds one point. Touching a shadow moth costs one life and briefly protects you. Collect 10 fireflies before the 60-second timer ends to win. You have three lives.</p></details>
+<script>
+(() => {
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),livesEl=document.getElementById('lives');
+const W=800,H=500; let player, bugs, moths, score, lives, timeLeft, running=false, paused=false, ended=false, last=0, spawn=0, invuln=0;
+const keys={}; const rand=(a,b)=>a+Math.random()*(b-a);
+function reset(){player={x:W/2,y:H/2,r:15,speed:220};bugs=[];moths=[];score=0;lives=3;timeLeft=60;spawn=0;invuln=0;running=true;paused=false;ended=false;for(let i=0;i<5;i++)bugs.push(makeBug());for(let i=0;i<3;i++)moths.push(makeMoth());updateHud();}
+function makeBug(){return {x:rand(35,W-35),y:rand(45,H-35),r:7,phase:rand(0,7)}}
+function makeMoth(){return {x:rand(30,W-30),y:rand(30,H-30),r:13,vx:rand(-90,90),vy:rand(-90,90)}}
+function updateHud(){scoreEl.textContent=score+' / 10';timeEl.textContent=Math.ceil(timeLeft);livesEl.textContent=lives;}
+function end(win){running=false;ended=true;draw();ctx.fillStyle='#081020cc';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle=win?'#75f0c2':'#ff719a';ctx.font='bold 44px system-ui';ctx.fillText(win?'LIGHT RESTORED!':'THE NIGHT WON',W/2,H/2-10);ctx.fillStyle='white';ctx.font='20px system-ui';ctx.fillText(win?'You gathered 10 fireflies.':'Try again and keep moving.',W/2,H/2+30);ctx.font='16px system-ui';ctx.fillText('Press Start / Restart to play again',W/2,H/2+65);}
+function update(dt){if(!running||paused)return;timeLeft-=dt;if(timeLeft<=0){timeLeft=0;updateHud();end(false);return;}invuln=Math.max(0,invuln-dt);
+let dx=0,dy=0;if(keys.ArrowLeft||keys.a||keys.A)dx--;if(keys.ArrowRight||keys.d||keys.D)dx++;if(keys.ArrowUp||keys.w||keys.W)dy--;if(keys.ArrowDown||keys.s||keys.S)dy++;
+if(dx||dy){const n=Math.hypot(dx,dy)||1;player.x+=dx/n*player.speed*dt;player.y+=dy/n*player.speed*dt;}player.x=Math.max(player.r,Math.min(W-player.r,player.x));player.y=Math.max(player.r,Math.min(H-player.r,player.y));
+for(const b of bugs)b.phase+=dt*4;
+for(const m of moths){const ax=player.x-m.x,ay=player.y-m.y,d=Math.hypot(ax,ay)||1;m.vx+=ax/d*18*dt;m.vy+=ay/d*18*dt;const v=Math.hypot(m.vx,m.vy);if(v>105){m.vx=m.vx/v*105;m.vy=m.vy/v*105;}m.x+=m.vx*dt;m.y+=m.vy*dt;if(m.x<m.r||m.x>W-m.r)m.vx*=-1;if(m.y<m.r||m.y>H-m.r)m.vy*=-1;if(invuln<=0&&Math.hypot(player.x-m.x,player.y-m.y)<player.r+m.r){lives--;invuln=1.25;m.vx*=-1;m.vy*=-1;if(lives<=0){updateHud();end(false);return;}}}
+for(let i=bugs.length-1;i>=0;i--){if(Math.hypot(player.x-bugs[i].x,player.y-bugs[i].y)<player.r+bugs[i].r+2){bugs.splice(i,1);score++;bugs.push(makeBug());if(score>=10){updateHud();end(true);return;}}}
+spawn+=dt;if(spawn>12&&moths.length<5){moths.push(makeMoth());spawn=0;}updateHud();}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#0d1428';ctx.fillRect(0,0,W,H);
+// soft lantern pools and stars
+for(let i=0;i<65;i++){const x=(i*137+31)%W,y=(i*83+17)%H;ctx.fillStyle=i%5===0?'#8299d8':'#ffffff35';ctx.fillRect(x,y,2,2);}
+ctx.strokeStyle='#28385f';ctx.lineWidth=2;for(let x=30;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=30;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+for(const b of bugs){const glow=ctx.createRadialGradient(b.x,b.y,1,b.x,b.y,25);glow.addColorStop(0,'#fff4a6aa');glow.addColorStop(1,'#ffd16600');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(b.x,b.y,25,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(b.x,b.y+Math.sin(b.phase)*3,b.r,0,Math.PI*2);ctx.fill();}
+for(const m of moths){ctx.fillStyle='#ff719a';ctx.beginPath();ctx.ellipse(m.x-7,m.y,9,5,-.5,0,Math.PI*2);ctx.ellipse(m.x+7,m.y,9,5,.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#37213f';ctx.beginPath();ctx.arc(m.x,m.y,7,0,Math.PI*2);ctx.fill();}
+if(player){if(invuln>0&&Math.floor(invuln*12)%2===0){}else{const g=ctx.createRadialGradient(player.x,player.y,2,player.x,player.y,48);g.addColorStop(0,'#ffd166bb');g.addColorStop(1,'#ffd16600');ctx.fillStyle=g;ctx.beginPath();ctx.arc(player.x,player.y,48,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff0b3';ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e89b36';ctx.fillRect(player.x-7,player.y-9,14,18);ctx.fillStyle='#fff8db';ctx.fillRect(player.x-4,player.y-6,8,12);}}
+if(!running&&!ended){ctx.fillStyle='#081020aa';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='white';ctx.font='bold 42px system-ui';ctx.fillText('GUIDE THE LIGHT',W/2,H/2-15);ctx.fillStyle='#c5d0f0';ctx.font='20px system-ui';ctx.fillText('Collect 10 fireflies. Avoid the shadow moths.',W/2,H/2+25);ctx.font='16px system-ui';ctx.fillText('Press Start / Restart to begin',W/2,H/2+60);}
+if(paused&&running){ctx.fillStyle='#081020bb';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='white';ctx.font='bold 42px system-ui';ctx.fillText('PAUSED',W/2,H/2);}
+}
+function frame(t){const dt=Math.min((t-last)/1000||0,.04);last=t;update(dt);draw();requestAnimationFrame(frame);}
+document.getElementById('start').addEventListener('click',reset);
+document.getElementById('pause').addEventListener('click',()=>{if(running)paused=!paused;});
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys[e.key]=true;if(e.key===' '&&running)paused=!paused;});
+window.addEventListener('keyup',e=>keys[e.key]=false);
+document.querySelectorAll('[data-dir]').forEach(btn=>{const k={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'}[btn.dataset.dir];btn.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;});['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,()=>keys[k]=false));});
+reset();running=false;draw();requestAnimationFrame(frame);
+})();
+</script></body></html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="650" viewBox="0 0 1000 650">
+<rect width="1000" height="650" fill="#f6f4ff"/><text x="50" y="55" font-family="Arial" font-size="18" font-weight="bold" fill="#7138c8">GAME DEVELOPMENT • SCREEN SKETCH</text>
+<text x="50" y="100" font-family="Arial" font-size="38" font-weight="bold" fill="#201632">Lantern Loop</text>
+<rect x="50" y="130" width="900" height="430" rx="22" fill="#10182e" stroke="#6577a7" stroke-width="3"/>
+<text x="80" y="170" font-family="Arial" font-size="18" fill="#d9e1ff">FIREFLIES 0/10</text><text x="430" y="170" font-family="Arial" font-size="18" fill="#d9e1ff">TIME 60s</text><text x="800" y="170" font-family="Arial" font-size="18" fill="#d9e1ff">LIVES 3</text>
+<g fill="#ffd166"><circle cx="210" cy="280" r="8"/><circle cx="630" cy="390" r="8"/><circle cx="760" cy="270" r="8"/><circle cx="370" cy="455" r="8"/></g>
+<g fill="#ff719a"><ellipse cx="500" cy="260" rx="20" ry="8"/><ellipse cx="500" cy="260" rx="8" ry="17"/></g>
+<circle cx="480" cy="355" r="42" fill="#ffd166" opacity=".18"/><circle cx="480" cy="355" r="17" fill="#fff0b3"/><rect x="474" y="345" width="12" height="20" fill="#e89b36"/><rect x="477" y="348" width="6" height="14" fill="#fff8db"/>
+<text x="500" y="210" text-anchor="middle" font-family="Arial" font-size="22" fill="#ffffff">Collect 10 fireflies • Avoid shadow moths</text>
+<rect x="385" y="495" width="230" height="42" rx="12" fill="#ffd166"/><text x="500" y="522" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#22243a">START / RESTART</text>
+<text x="50" y="605" font-family="Arial" font-size="18" fill="#4f5f7e">Feedback states: Ready • Playing • Paused • Win • Loss</text><text x="50" y="630" font-family="Arial" font-size="15" fill="#4f5f7e">Sketch concept only; the playable HTML prototype contains the functional UI.</text>
+</svg>
